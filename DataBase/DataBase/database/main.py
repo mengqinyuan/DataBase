@@ -1,7 +1,7 @@
 import pandas
 import time
 class DataBase:
-    def __init__(self):
+    def __init__(self, name=None):
         self.data = {}
         self.length = 0
         self.buffer = {}  # flush area
@@ -10,7 +10,7 @@ class DataBase:
         self.index_col = None
         self.columns = None
 
-    def upload_from_csv(self, data_path:str, index_col, columns) -> None:
+    def upload_from_csv(self, data_path, index_col, columns):
         import os
         import pandas as pd
         if data_path is None:
@@ -47,12 +47,13 @@ class DataBase:
         self.index_col=index_col
         self.columns=columns
 
+
     def get_length(self):
-        # Get the length
+        # get the length
         return self.length
 
     def get_width(self):
-        # get the width
+        # get the length
         return self.width
 
     def get_data_by_index(self, index):
@@ -64,16 +65,15 @@ class DataBase:
 
         return list(self.data.items())[index]
 
-    def get_data_by_header(self, header_name):
-        if not header_name in self._get_headers():
-            raise ValueError(f"{header_name} not in the header.")
+    def get_data_by_header(self, header):
+        # get the data by the header.
+        if not header in self._get_headers():
+            raise ValueError(f"{header} not in the columns")
 
-        return self.data[header_name]
-
+        return self.data[header]
+    
     def _get_headers(self):
-        # get the headers to make `get_data_by_header()` works.
-        headers = [header_name for header_name in self.data]
-        return headers
+        return [header for header in [self.index_col]+self.index_col]
 
     def select_by_judgement(self, judgement: dict):
         """
@@ -170,13 +170,32 @@ class DataBase:
             "local time": time.perf_counter()
         }
         self.time += 1
+
+    def update_data(self, index, message="Delete: ___"):
+        if not isinstance(index, int):
+            raise IndexError("Index must be integer.")
+
+        if index < 0 or index >= self.length:
+            raise IndexError(f"Index must be from 0 to {self.length - 1}")
+
+        self.buffer[self.time] = {
+            "time": self.time + 1,
+            "To do": "Update",
+            "Message": message,
+            "Position": index,  # Fixed: Use the correct variable name
+            "data": list(self.data.values())[index],
+            "local time": time.perf_counter()
+        }
+
+        self.time += 1
     def commit(self):
         for change in self.buffer.values():
             if change["To do"] == "Add":
                 self._add_data(change)
             elif change["To do"] == "Delete":
                 self._delete_data(change)
-
+            elif change["To do"] == "Update":
+                self._update_data(change)
         # Clear buffer after applying changes
         self.buffer.clear()
 
@@ -192,11 +211,30 @@ class DataBase:
         del self.data[list(self.data.keys())[change["Position"]]]
         self.length -= 1
 
+    def _update_data(self, change):
+        if not isinstance(change["data"], dict):
+            raise ValueError("Data should be a dictionary with keys matching the columns.")
+
+        if not set(change["data"]).issubset(self.columns+[self.index_col]):
+            raise ValueError(f"Wrong match keys: {change["data"].keys()}")
+
+        self.data[change["header"]] = change["data"]
+
+    def get_index_by_header(self, header):
+        if not header in self._get_headers():
+            raise ValueError(f"Wrong Header Name {header}")
+
+        index = 0
+        for di in self.data:
+            if di == header:
+                return index
+            index += 1
+
     def print_change(self):
         for change in self.buffer.values():
             print(change)
 
     def print_data(self):
-        for data_i in self.data:
-            print(f"{data_i} : {self.data[data_i]}")
+        for d in self.data:
+            print(f"{d} : {self.data[d]}")
 
