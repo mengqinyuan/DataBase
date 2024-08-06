@@ -216,7 +216,7 @@ class DataBase:
             raise ValueError("Data should be a dictionary with keys matching the columns.")
 
         if not set(change["data"]).issubset(self.columns+[self.index_col]):
-            raise ValueError(f"Wrong match keys: {change["data"].keys()}")
+            raise ValueError(f"Wrong match keys: {change['data'].keys()}")
 
         self.data[change["header"]] = change["data"]
 
