@@ -53,7 +53,10 @@ class DataBase:
         try:
             localtime = time.localtime(time.time())
             formatted_time = time.strftime("%Y-%m-%d %H:%M:%S", localtime)
-            with open("./history/history.txt", mode="a") as history_file:
+
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(current_dir, "history", "history.txt")
+            with open(file_path, mode="a") as history_file:
                 history_file.write(f"{formatted_time}\n")
                 history_file.write(f"{self.data_path}\n")
                 history_file.write(f"{self.index_col}, {self.columns}\n")
@@ -89,7 +92,10 @@ class DataBase:
         return self.data[header]
     
     def _get_headers(self):
-        return [header for header in [self.index_col]+self.index_col]
+        return [header for header in self.data]
+
+    def _get_columns(self):
+        return [col_name for col_name in self.columns+[self.index_col]]
 
     def select_by_judgement(self, judgement: dict):
         """
@@ -187,9 +193,12 @@ class DataBase:
         }
         self.time += 1
 
-    def update_data(self, index, message="Update: ___"):
+    def update_data(self, index, message="Update: ___", data=None):
         if not isinstance(index, int):
             raise IndexError("Index must be integer.")
+
+        if data is None:
+            raise ValueError("Data must be provided.")
 
         if index < 0 or index >= self.length:
             raise IndexError(f"Index must be from 0 to {self.length - 1}")
@@ -199,7 +208,8 @@ class DataBase:
             "To do": "Update",
             "Message": message,
             "Position": index,  # Fixed: Use the correct variable name
-            "data": list(self.data.values())[index],
+            "header": list(self.data.keys())[index],
+            "data": data,
             "local time": time.perf_counter()
         }
 
@@ -216,9 +226,12 @@ class DataBase:
                 self._merge_data(change)
         # Clear buffer after applying changes
         try:
+            import os
             localtime = time.localtime(time.time())
             formatted_time = time.strftime("%Y-%m-%d %H:%M:%S", localtime)
-            with open("./history/history.txt", mode="a") as history_file:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(current_dir, "history", "history.txt")
+            with open(file_path, mode="a") as history_file:
                 history_file.write(f"{formatted_time}\n")
                 history_file.write(f"{self.data_path}\n")
                 history_file.write(f"{self.index_col}, {self.columns}\n")
@@ -276,7 +289,7 @@ class DataBase:
         if not isinstance(change["data"], DataBase):
             raise ValueError("Data should be a DataBase object.")
 
-        if change["data"].index_col != self.index_col or change["data"].columns != self.columns:
+        if not (change["data"].index_col == self.index_col and change["data"].columns == self.columns):
             raise ValueError("DataBase object should have the same index_col and columns as the current DataBase.")
 
         for di in change["data"].data:
