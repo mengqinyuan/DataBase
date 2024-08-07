@@ -9,10 +9,12 @@ class DataBase:
         self.width = 0
         self.index_col = None
         self.columns = None
+        self.data_path = None
 
     def upload_from_csv(self, data_path, index_col, columns):
         import os
         import pandas as pd
+        self.data_path = data_path
         if data_path is None:
             raise ValueError("Invalid path")
 
@@ -47,6 +49,20 @@ class DataBase:
         self.index_col=index_col
         self.columns=columns
 
+        # write the data into history/history.txt
+        try:
+            localtime = time.localtime(time.time())
+            formatted_time = time.strftime("%Y-%m-%d %H:%M:%S", localtime)
+            with open("./history/history.txt", mode="a") as history_file:
+                history_file.write(f"{formatted_time}\n")
+                history_file.write(f"{self.data_path}\n")
+                history_file.write(f"{self.index_col}, {self.columns}\n")
+                history_file.write(f"{self.length}\n")
+                history_file.write(f"{self.time}\n")
+                history_file.write(f"{self.data}\n")
+                history_file.write("=====================\n")
+        except Exception as e:
+            print(f"Error writing to history file: {e}")
 
     def get_length(self):
         # get the length
@@ -171,7 +187,7 @@ class DataBase:
         }
         self.time += 1
 
-    def update_data(self, index, message="Delete: ___"):
+    def update_data(self, index, message="Update: ___"):
         if not isinstance(index, int):
             raise IndexError("Index must be integer.")
 
@@ -196,7 +212,22 @@ class DataBase:
                 self._delete_data(change)
             elif change["To do"] == "Update":
                 self._update_data(change)
+            elif change["To do"] == "Merge":
+                self._merge_data(change)
         # Clear buffer after applying changes
+        try:
+            localtime = time.localtime(time.time())
+            formatted_time = time.strftime("%Y-%m-%d %H:%M:%S", localtime)
+            with open("./history/history.txt", mode="a") as history_file:
+                history_file.write(f"{formatted_time}\n")
+                history_file.write(f"{self.data_path}\n")
+                history_file.write(f"{self.index_col}, {self.columns}\n")
+                history_file.write(f"{self.length}\n")
+                history_file.write(f"{self.time}\n")
+                history_file.write(f"{self.data}\n")
+                history_file.write("=====================\n")
+        except Exception as e:
+            print(f"Error writing to history file: {e}")
         self.buffer.clear()
 
     def _add_data(self, change):
@@ -230,6 +261,29 @@ class DataBase:
                 return index
             index += 1
 
+    def merge_data(self, DataBase_object, message="Merge___"):
+        self.buffer[self.time] = {
+            "time": self.time + 1,
+            "To do": "Merge",
+            "Message": message,
+            "Position": self.length,  # Fixed: Use the correct variable name
+            "data": DataBase_object,
+            "local time": time.perf_counter()
+        }
+        self.time += 1
+
+    def _merge_data(self, change):
+        if not isinstance(change["data"], DataBase):
+            raise ValueError("Data should be a DataBase object.")
+
+        if change["data"].index_col != self.index_col or change["data"].columns != self.columns:
+            raise ValueError("DataBase object should have the same index_col and columns as the current DataBase.")
+
+        for di in change["data"].data:
+            self.data[di] = change["data"].data[di]
+
+        self.length += change["data"].length
+
     def print_change(self):
         for change in self.buffer.values():
             print(change)
@@ -237,4 +291,3 @@ class DataBase:
     def print_data(self):
         for d in self.data:
             print(f"{d} : {self.data[d]}")
-
