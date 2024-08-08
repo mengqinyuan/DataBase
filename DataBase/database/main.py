@@ -289,8 +289,8 @@ class DataBase:
         if not isinstance(change["data"], DataBase):
             raise ValueError("Data should be a DataBase object.")
 
-        if not (change["data"].index_col == self.index_col and change["data"].columns == self.columns):
-            raise ValueError("DataBase object should have the same index_col and columns as the current DataBase.")
+        # if not (change["data"].index_col == self.index_col and change["data"].columns == self.columns):
+        #     raise ValueError("DataBase object should have the same index_col and columns as the current DataBase.")
 
         for di in change["data"].data:
             self.data[di] = change["data"].data[di]
