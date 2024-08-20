@@ -1,4 +1,4 @@
-import pandas
+
 import time
 class DataBase:
     def __init__(self, name=None):
@@ -268,11 +268,7 @@ class DataBase:
         if not header in self._get_headers():
             raise ValueError(f"Wrong Header Name {header}")
 
-        index = 0
-        for di in self.data:
-            if di == header:
-                return index
-            index += 1
+        return list(self.data).index(header)
 
     def merge_data(self, DataBase_object, message="Merge___"):
         self.buffer[self.time] = {
@@ -296,6 +292,27 @@ class DataBase:
             self.data[di] = change["data"].data[di]
 
         self.length += change["data"].length
+
+    def get_average_data(self, column_name):
+        if column_name not in self.columns:
+            raise ValueError(f"Column {column_name} not found in DataBase.")
+
+        col_data = [key[column_name] for key in self.data.values()]
+        return sum(col_data) / len(col_data)
+
+    def sort_data(self, column_name, reverse=False):
+        if column_name not in self.columns:
+            raise ValueError(f"Column {column_name} not found in DataBase.")
+        
+        if not isinstance(self.data[list(self.data.keys())[0]][column_name], (int, float)): # Fixed : Check if the column is numeric
+            raise ValueError(f"Column {column_name} is not numeric.")
+        
+        sorted_data = sorted(self.data.items(), key=lambda x: x[1][column_name])
+        
+        if reverse:
+            sorted_data.reverse()
+            
+        return [item[0] for item in sorted_data]
 
     def print_change(self):
         for change in self.buffer.values():
