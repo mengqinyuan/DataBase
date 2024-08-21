@@ -1,7 +1,7 @@
 import unittest
 import os
 from datetime import datetime
-from database.main import DataBase  # 假设你的模块名为 database.main
+from database.main import DataBase 
 
 class TestDataBase(unittest.TestCase):
 
@@ -10,14 +10,14 @@ class TestDataBase(unittest.TestCase):
         self.test_data_path = 'test_data.csv'
         self.index_col = 'id'
         self.columns = ['name', 'age']
-        # 创建测试数据文件
+        # create test data
         with open(self.test_data_path, 'w') as f:
             f.write('id,name,age\n')
             f.write('1,Alice,25\n')
             f.write('2,Bob,30\n')
 
     def tearDown(self):
-        # 删除测试数据文件
+        # delete test data
         os.remove(self.test_data_path)
 
     def test_upload_from_csv(self):
@@ -72,6 +72,20 @@ class TestDataBase(unittest.TestCase):
         self.db.commit()
         self.assertEqual(self.db.get_data_by_index(0), (1, {'name': 'Charlie', 'age': '35'}))
 
+    def test_get_average_data(self):
+        self.db.upload_from_csv(self.test_data_path, self.index_col, self.columns)
+        average_age = self.db.get_average_data('age')
+        self.assertEqual(average_age, 27.5)
+
+    def test_sort_data_reverse_True(self):
+        self.db.upload_from_csv(self.test_data_path, self.index_col, self.columns)
+        self.db.sort_data('age', reverse=True)
+        self.assertEqual(self.db.get_data_by_index(0), (1, {'age': 25, 'name': 'Alice'}))
+
+    def test_sort_data_reverse_False(self):
+        self.db.upload_from_csv(self.test_data_path, self.index_col, self.columns)
+        self.db.sort_data('age', reverse=False)
+        self.assertEqual(self.db.get_data_by_index(0), (1, {'name': 'Alice', 'age': 25}))
 
 if __name__ == '__main__':
     unittest.main()
